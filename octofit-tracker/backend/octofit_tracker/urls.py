@@ -15,8 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 from . import views
+import os
+from django.http import JsonResponse
+from django.urls import reverse
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet, basename='user')
@@ -25,8 +29,32 @@ router.register(r'activities', views.ActivityViewSet, basename='activity')
 router.register(r'workouts', views.WorkoutViewSet, basename='workout')
 router.register(r'leaderboards', views.LeaderboardViewSet, basename='leaderboard')
 
+
+
+from rest_framework import routers
+from rest_framework.documentation import include_docs_urls
+from rest_framework.schemas import get_schema_view
+from rest_framework.renderers import CoreJSONRenderer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.permissions import AllowAny
+
+class CustomApiRoot(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, format=None):
+        return Response({
+            'users': reverse('user-list', request=request, format=format),
+            'teams': reverse('team-list', request=request, format=format),
+            'activities': reverse('activity-list', request=request, format=format),
+            'workouts': reverse('workout-list', request=request, format=format),
+            'leaderboards': reverse('leaderboard-list', request=request, format=format),
+        })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.api_root, name='api-root'),
-    path('', include(router.urls)),
+    path('', RedirectView.as_view(url='/api/', permanent=False)),
+    path('api/', CustomApiRoot.as_view(), name='api-root'),
+    path('api/', include(router.urls)),
+    path('api-auth/', include('rest_framework.urls')),
 ]
